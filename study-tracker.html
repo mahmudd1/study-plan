@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Tracker — Exam in 6 Days</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f13;
+    --bg2: #17171e;
+    --bg3: #1e1e28;
+    --bg4: #26262f;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #f0f0f5;
+    --text2: #9898a8;
+    --text3: #5f5f72;
+    --prog:  #7c6fef;
+    --db:    #3ecf8e;
+    --dccet: #f97843;
+    --algo:  #f5a623;
+    --accent: #7c6fef;
+    --accent2: #a998ff;
+    --green: #3ecf8e;
+    --red: #ff5c5c;
+    --radius: 10px;
+    --radius-lg: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* LAYOUT */
+  .shell { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; flex-shrink: 0; background: var(--bg2); border-right: 1px solid var(--border); padding: 24px 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+  .main { flex: 1; padding: 32px 36px; overflow-y: auto; max-width: 860px; }
+
+  /* SIDEBAR */
+  .logo { padding: 0 20px 24px; border-bottom: 1px solid var(--border); }
+  .logo h1 { font-size: 15px; font-weight: 600; color: var(--text); letter-spacing: -0.3px; }
+  .logo p { font-size: 11px; color: var(--text3); margin-top: 3px; font-family: 'DM Mono', monospace; }
+  .nav { padding: 16px 12px; flex: 1; }
+  .nav-label { font-size: 10px; font-weight: 600; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; padding: 0 8px; margin-bottom: 6px; margin-top: 16px; }
+  .nav-label:first-child { margin-top: 0; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; font-size: 13px; color: var(--text2); transition: all 0.15s; margin-bottom: 2px; position: relative; }
+  .nav-item:hover { background: var(--bg3); color: var(--text); }
+  .nav-item.active { background: rgba(124,111,239,0.15); color: var(--accent2); }
+  .nav-item .dot { width: 8px; height: 8px; border-radius: 3px; flex-shrink: 0; }
+  .nav-item .badge { margin-left: auto; font-size: 10px; font-family: 'DM Mono', monospace; background: var(--bg4); color: var(--text3); padding: 2px 6px; border-radius: 20px; }
+  .nav-item.done-day { color: var(--green); }
+  .nav-item.done-day .badge { background: rgba(62,207,142,0.15); color: var(--green); }
+  .nav-item.exam-day { color: var(--red); }
+  .overall-progress { padding: 16px 20px; border-top: 1px solid var(--border); }
+  .overall-progress p { font-size: 11px; color: var(--text3); margin-bottom: 6px; }
+  .prog-track { background: var(--bg4); border-radius: 4px; height: 4px; overflow: hidden; }
+  .prog-fill { height: 4px; background: var(--accent); border-radius: 4px; transition: width 0.4s cubic-bezier(.4,0,.2,1); }
+  .prog-pct { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--accent2); margin-top: 6px; }
+
+  /* VIEWS */
+  .view { display: none; }
+  .view.active { display: block; }
+
+  /* PAGE HEADER */
+  .page-header { margin-bottom: 28px; }
+  .page-header h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.5px; color: var(--text); }
+  .page-header p { font-size: 14px; color: var(--text2); margin-top: 4px; }
+  .tag { display: inline-block; font-size: 11px; padding: 3px 10px; border-radius: 20px; font-weight: 500; margin-right: 6px; margin-top: 8px; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 28px; }
+  .stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+  .stat-card .s-label { font-size: 11px; color: var(--text3); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .stat-card .s-val { font-size: 26px; font-weight: 600; font-family: 'DM Mono', monospace; color: var(--text); letter-spacing: -1px; }
+  .stat-card .s-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+  /* SECTION */
+  .section { margin-bottom: 28px; }
+  .section-head { font-size: 11px; font-weight: 600; color: var(--text3); letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 12px; }
+
+  /* SCHEDULE */
+  .slot { display: grid; grid-template-columns: 110px 1fr 32px; gap: 10px; align-items: center; margin-bottom: 5px; }
+  .slot-time { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--text3); white-space: nowrap; }
+  .slot-body { border-radius: var(--radius); padding: 8px 14px; }
+  .slot-body strong { font-size: 13px; font-weight: 500; display: block; }
+  .slot-body span { font-size: 11px; opacity: 0.7; display: block; margin-top: 1px; }
+  .slot-chk { width: 28px; height: 28px; border-radius: 8px; border: 1px solid var(--border2); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.15s; flex-shrink: 0; }
+  .slot-chk:hover { border-color: var(--accent); }
+  .slot-chk.on { background: rgba(62,207,142,0.15); border-color: var(--green); }
+  .slot-chk svg { width: 14px; height: 14px; }
+  .slot-body.done { opacity: 0.45; text-decoration: line-through; }
+
+  /* slot colors */
+  .c-wake  { background: rgba(62,207,142,0.08); color: #3ecf8e; }
+  .c-prog  { background: rgba(124,111,239,0.1); color: #a998ff; }
+  .c-db    { background: rgba(62,207,142,0.1);  color: #3ecf8e; }
+  .c-dccet { background: rgba(249,120,67,0.1);  color: #f97843; }
+  .c-algo  { background: rgba(245,166,35,0.1);  color: #f5a623; }
+  .c-rev   { background: rgba(212,83,126,0.1);  color: #e87fb0; }
+  .c-brk   { background: var(--bg3); color: var(--text3); }
+  .c-gym   { background: rgba(255,92,92,0.08);  color: #ff8080; }
+  .c-sleep { background: rgba(55,138,221,0.1);  color: #78b4f0; }
+
+  /* SUBJECT CARDS */
+  .subj-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .subj-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; }
+  .subj-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+  .subj-dot { width: 10px; height: 10px; border-radius: 3px; }
+  .subj-card-head span { font-size: 14px; font-weight: 500; }
+  .stars { display: flex; gap: 4px; margin-bottom: 10px; }
+  .star { font-size: 18px; cursor: pointer; color: var(--bg4); transition: color 0.1s; line-height: 1; }
+  .star.on { color: var(--algo); }
+  .subj-note { width: 100%; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 12px; padding: 8px 10px; resize: none; height: 64px; outline: none; transition: border-color 0.15s; }
+  .subj-note:focus { border-color: var(--border2); }
+  .subj-note::placeholder { color: var(--text3); }
+
+  /* LOG */
+  .log-entry { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; font-size: 13px; color: var(--text2); display: flex; align-items: start; gap: 10px; margin-bottom: 6px; }
+  .log-text { flex: 1; line-height: 1.5; }
+  .log-time { font-size: 10px; font-family: 'DM Mono', monospace; color: var(--text3); white-space: nowrap; margin-top: 2px; }
+  .log-del { cursor: pointer; color: var(--text3); font-size: 16px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+  .log-del:hover { color: var(--red); }
+  .add-row { display: flex; gap: 8px; margin-top: 10px; }
+  .add-input { flex: 1; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 9px 12px; outline: none; transition: border-color 0.15s; }
+  .add-input:focus { border-color: var(--border2); }
+  .add-input::placeholder { color: var(--text3); }
+
+  /* BUTTONS */
+  button { font-family: 'DM Sans', sans-serif; cursor: pointer; }
+  .btn { padding: 8px 16px; border-radius: var(--radius); border: 1px solid var(--border2); background: transparent; color: var(--text2); font-size: 13px; transition: all 0.15s; }
+  .btn:hover { background: var(--bg3); color: var(--text); }
+  .btn-accent { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn-accent:hover { background: var(--accent2); border-color: var(--accent2); color: #fff; }
+  .btn.saved { background: rgba(62,207,142,0.15); border-color: var(--green); color: var(--green); }
+
+  /* MOOD */
+  .mood-row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .mood-btn { padding: 7px 16px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; transition: all 0.15s; }
+  .mood-btn:hover { border-color: var(--border2); color: var(--text); }
+  .mood-btn.on { border-color: var(--accent); background: rgba(124,111,239,0.15); color: var(--accent2); }
+
+  /* TEXTAREA */
+  .textarea { width: 100%; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 12px 14px; resize: none; outline: none; transition: border-color 0.15s; line-height: 1.6; }
+  .textarea:focus { border-color: var(--border2); }
+  .textarea::placeholder { color: var(--text3); }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+
+  /* EXAM VIEW */
+  .exam-hero { background: linear-gradient(135deg, rgba(255,92,92,0.12), rgba(249,120,67,0.08)); border: 1px solid rgba(255,92,92,0.2); border-radius: var(--radius-lg); padding: 28px; text-align: center; margin-bottom: 24px; }
+  .exam-hero h2 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 8px; }
+  .exam-hero p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* OVERVIEW VIEW */
+  .day-overview-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 20px; margin-bottom: 10px; display: flex; align-items: center; gap: 16px; cursor: pointer; transition: border-color 0.15s; }
+  .day-overview-card:hover { border-color: var(--border2); }
+  .day-ov-label { font-size: 14px; font-weight: 500; flex: 1; }
+  .day-ov-sub { font-size: 12px; color: var(--text3); }
+  .day-ov-bar { width: 120px; }
+  .day-ov-bar .t { font-size: 11px; color: var(--text3); margin-bottom: 4px; font-family: 'DM Mono', monospace; }
+  .mini-bar { background: var(--bg4); border-radius: 4px; height: 4px; overflow: hidden; }
+  .mini-fill { height: 4px; border-radius: 4px; background: var(--accent); transition: width 0.3s; }
+  .mini-fill.complete { background: var(--green); }
+  .go-btn { font-size: 12px; color: var(--text3); padding: 6px 12px; border-radius: var(--radius); border: 1px solid var(--border); background: transparent; }
+  .go-btn:hover { border-color: var(--border2); color: var(--text); }
+
+  /* MOBILE */
+  .mob-header { display: none; background: var(--bg2); border-bottom: 1px solid var(--border); padding: 12px 16px; position: sticky; top: 0; z-index: 100; }
+  .mob-header h1 { font-size: 14px; font-weight: 600; }
+  .mob-tabs { display: none; padding: 8px 12px; background: var(--bg2); border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap; }
+  .mob-tab { display: inline-block; padding: 5px 12px; border-radius: 20px; border: 1px solid var(--border); font-size: 12px; color: var(--text2); margin-right: 6px; cursor: pointer; }
+  .mob-tab.active { background: rgba(124,111,239,0.15); border-color: var(--accent); color: var(--accent2); }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .mob-header, .mob-tabs { display: block; }
+    .main { padding: 20px 16px; }
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .subj-grid { grid-template-columns: 1fr; }
+    .slot { grid-template-columns: 90px 1fr 32px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="mob-header"><h1>Study Tracker</h1></div>
+<div class="mob-tabs" id="mob-tabs"></div>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="logo">
+      <h1>Study Tracker</h1>
+      <p>Exam in <span id="sb-days">6</span> days</p>
+    </div>
+    <nav class="nav">
+      <div class="nav-label">Overview</div>
+      <div class="nav-item active" data-view="overview" onclick="switchView('overview')">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        All days
+      </div>
+      <div class="nav-label">Study days</div>
+      <div class="nav-item" data-view="day0" onclick="switchView('day0')">
+        <div class="dot" style="background:var(--accent)"></div>
+        Day 1
+        <span class="badge" id="sb-badge-0">0%</span>
+      </div>
+      <div class="nav-item" data-view="day1" onclick="switchView('day1')">
+        <div class="dot" style="background:var(--accent)"></div>
+        Day 2
+        <span class="badge" id="sb-badge-1">0%</span>
+      </div>
+      <div class="nav-item" data-view="day2" onclick="switchView('day2')">
+        <div class="dot" style="background:var(--accent)"></div>
+        Day 3
+        <span class="badge" id="sb-badge-2">0%</span>
+      </div>
+      <div class="nav-item" data-view="day3" onclick="switchView('day3')">
+        <div class="dot" style="background:var(--accent)"></div>
+        Day 4
+        <span class="badge" id="sb-badge-3">0%</span>
+      </div>
+      <div class="nav-item" data-view="day4" onclick="switchView('day4')">
+        <div class="dot" style="background:var(--accent)"></div>
+        Day 5
+        <span class="badge" id="sb-badge-4">0%</span>
+      </div>
+      <div class="nav-label">Exam</div>
+      <div class="nav-item exam-day" data-view="day5" onclick="switchView('day5')">
+        <div class="dot" style="background:var(--red)"></div>
+        Day 6 — Exam
+      </div>
+    </nav>
+    <div class="overall-progress">
+      <p>Overall progress</p>
+      <div class="prog-track"><div class="prog-fill" id="sb-prog" style="width:0%"></div></div>
+      <div class="prog-pct" id="sb-pct">0%</div>
+    </div>
+  </aside>
+
+  <main class="main" id="main-area"></main>
+</div>
+
+<script>
+const DAYS_DATA = [
+  { title:"Day 1", sub:"Basics of all subjects", topics:"Programming · Database · DCCET · Algorithms",
+    slots:[
+      {t:"7:00–8:00",   c:"c-wake",  s:"Wake up + breakfast + freshen up",        d:"Eat well, no phone scrolling",                       chk:false},
+      {t:"8:00–10:00",  c:"c-prog",  s:"Programming — intro",                      d:"Variables, data types, conditionals, loops, functions", chk:true},
+      {t:"10:00–10:15", c:"c-brk",   s:"Break",                                   d:"Stretch, water, snack",                               chk:false},
+      {t:"10:15–12:15", c:"c-db",    s:"Database — intro",                         d:"Relational model, tables, keys, ER diagrams",          chk:true},
+      {t:"12:15–1:15",  c:"c-brk",   s:"Lunch + rest",                            d:"",                                                    chk:false},
+      {t:"1:15–3:15",   c:"c-dccet", s:"DCCET — intro",                            d:"Number systems: binary, octal, hex, conversions",      chk:true},
+      {t:"3:15–3:30",   c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"3:30–5:30",   c:"c-algo",  s:"Algorithms — intro",                       d:"Big O notation, time & space complexity",              chk:true},
+      {t:"5:30–6:30",   c:"c-gym",   s:"Gym 30 min + shower 30 min",              d:"",                                                    chk:true},
+      {t:"6:30–7:30",   c:"c-brk",   s:"Dinner",                                  d:"",                                                    chk:false},
+      {t:"7:30–9:30",   c:"c-prog",  s:"Programming — OOP basics",                 d:"Classes, objects, inheritance, encapsulation",         chk:true},
+      {t:"9:30–12:00",  c:"c-rev",   s:"Review all 4 + make cheat sheet",         d:"1-page summary per subject",                          chk:true},
+      {t:"12:00–7:00",  c:"c-sleep", s:"Sleep — 7 hours",                          d:"",                                                    chk:false},
+    ]
+  },
+  { title:"Day 2", sub:"Core concepts", topics:"Programming · Database · DCCET · Algorithms",
+    slots:[
+      {t:"7:00–8:00",   c:"c-wake",  s:"Wake up + breakfast + freshen up",        d:"",                                                    chk:false},
+      {t:"8:00–10:00",  c:"c-prog",  s:"Programming — deeper",                    d:"Recursion, error handling, arrays, strings",           chk:true},
+      {t:"10:00–10:15", c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"10:15–12:15", c:"c-db",    s:"Database — SQL basics",                   d:"SELECT, WHERE, ORDER BY, INSERT, UPDATE, DELETE",      chk:true},
+      {t:"12:15–1:15",  c:"c-brk",   s:"Lunch + rest",                            d:"",                                                    chk:false},
+      {t:"1:15–3:15",   c:"c-dccet", s:"DCCET — logic gates",                     d:"AND, OR, NOT, NAND, NOR, XOR — truth tables",          chk:true},
+      {t:"3:15–3:30",   c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"3:30–5:30",   c:"c-algo",  s:"Algorithms — sorting",                    d:"Bubble, selection, insertion sort — trace through",    chk:true},
+      {t:"5:30–6:30",   c:"c-gym",   s:"Gym 30 min + shower 30 min",              d:"",                                                    chk:true},
+      {t:"6:30–7:30",   c:"c-brk",   s:"Dinner",                                  d:"",                                                    chk:false},
+      {t:"7:30–9:30",   c:"c-db",    s:"Database — SQL JOINs",                    d:"INNER, LEFT, RIGHT JOIN, GROUP BY, HAVING",            chk:true},
+      {t:"9:30–12:00",  c:"c-rev",   s:"Review + update cheat sheets",            d:"Highlight what was hard today",                        chk:true},
+      {t:"12:00–7:00",  c:"c-sleep", s:"Sleep — 7 hours",                         d:"",                                                    chk:false},
+    ]
+  },
+  { title:"Day 3", sub:"Intermediate topics", topics:"Programming · Database · DCCET · Algorithms",
+    slots:[
+      {t:"7:00–8:00",   c:"c-wake",  s:"Wake up + breakfast + freshen up",        d:"",                                                    chk:false},
+      {t:"8:00–10:00",  c:"c-prog",  s:"Programming — practice",                  d:"Write programs: loops, functions, OOP problems",       chk:true},
+      {t:"10:00–10:15", c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"10:15–12:15", c:"c-db",    s:"Database — normalization",                d:"1NF, 2NF, 3NF, BCNF — rules + examples",               chk:true},
+      {t:"12:15–1:15",  c:"c-brk",   s:"Lunch + rest",                            d:"",                                                    chk:false},
+      {t:"1:15–3:15",   c:"c-dccet", s:"DCCET — Boolean algebra",                 d:"Simplification, De Morgan's laws, K-map basics",       chk:true},
+      {t:"3:15–3:30",   c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"3:30–5:30",   c:"c-algo",  s:"Algorithms — merge sort, quick sort",     d:"Code and trace, binary search",                        chk:true},
+      {t:"5:30–6:30",   c:"c-gym",   s:"Gym 30 min + shower 30 min",              d:"",                                                    chk:true},
+      {t:"6:30–7:30",   c:"c-brk",   s:"Dinner",                                  d:"",                                                    chk:false},
+      {t:"7:30–9:30",   c:"c-dccet", s:"DCCET — combinational circuits",           d:"Half/full adder, mux, demux, decoder, encoder",        chk:true},
+      {t:"9:30–12:00",  c:"c-rev",   s:"Review all 4 + focus on weak areas",      d:"",                                                    chk:true},
+      {t:"12:00–7:00",  c:"c-sleep", s:"Sleep — 7 hours",                         d:"",                                                    chk:false},
+    ]
+  },
+  { title:"Day 4", sub:"Advanced topics", topics:"Programming · Database · DCCET · Algorithms",
+    slots:[
+      {t:"7:00–8:00",   c:"c-wake",  s:"Wake up + breakfast + freshen up",        d:"",                                                    chk:false},
+      {t:"8:00–10:00",  c:"c-prog",  s:"Programming — advanced",                  d:"Pointers, data structures in code, exceptions",        chk:true},
+      {t:"10:00–10:15", c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"10:15–12:15", c:"c-db",    s:"Database — transactions + advanced",       d:"ACID, concurrency, indexes, views, procedures",        chk:true},
+      {t:"12:15–1:15",  c:"c-brk",   s:"Lunch + rest",                            d:"",                                                    chk:false},
+      {t:"1:15–3:15",   c:"c-dccet", s:"DCCET — sequential circuits",              d:"SR, D, JK, T flip-flops — timing diagrams",            chk:true},
+      {t:"3:15–3:30",   c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"3:30–5:30",   c:"c-algo",  s:"Algorithms — trees + graphs",              d:"Stacks, queues, linked lists, trees, graphs",          chk:true},
+      {t:"5:30–6:30",   c:"c-gym",   s:"Gym 30 min + shower 30 min",              d:"",                                                    chk:true},
+      {t:"6:30–7:30",   c:"c-brk",   s:"Dinner",                                  d:"",                                                    chk:false},
+      {t:"7:30–9:30",   c:"c-algo",  s:"Algorithms — BFS, DFS, DP",               d:"Graph traversal, greedy algorithms",                   chk:true},
+      {t:"9:30–12:00",  c:"c-rev",   s:"Review all 4 — update final cheat sheets", d:"",                                                   chk:true},
+      {t:"12:00–7:00",  c:"c-sleep", s:"Sleep — 7 hours",                         d:"",                                                    chk:false},
+    ]
+  },
+  { title:"Day 5", sub:"Full revision + mock exam", topics:"All 4 subjects — revision, mock, fix weak spots",
+    slots:[
+      {t:"7:00–8:00",   c:"c-wake",  s:"Wake up + breakfast + freshen up",        d:"",                                                    chk:false},
+      {t:"8:00–9:30",   c:"c-prog",  s:"Revision — Programming",                  d:"Cheat sheet, common exam questions, tricky OOP",       chk:true},
+      {t:"9:30–11:00",  c:"c-db",    s:"Revision — Database",                      d:"SQL list, normalization steps, ER rules",              chk:true},
+      {t:"11:00–11:15", c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"11:15–12:45", c:"c-dccet", s:"Revision — DCCET",                         d:"Gate symbols, flip-flop tables, K-map",                chk:true},
+      {t:"12:45–1:45",  c:"c-brk",   s:"Lunch + rest",                            d:"",                                                    chk:false},
+      {t:"1:45–3:15",   c:"c-algo",  s:"Revision — Algorithms",                   d:"Big O table, sorting comparison, graph traversal",     chk:true},
+      {t:"3:15–3:30",   c:"c-brk",   s:"Break",                                   d:"",                                                    chk:false},
+      {t:"3:30–5:30",   c:"c-rev",   s:"Mock exam — timed, all 4 subjects",       d:"No notes, time yourself, exam conditions",             chk:true},
+      {t:"5:30–6:30",   c:"c-gym",   s:"Gym 30 min + shower 30 min",              d:"",                                                    chk:true},
+      {t:"6:30–7:30",   c:"c-brk",   s:"Dinner",                                  d:"",                                                    chk:false},
+      {t:"7:30–9:30",   c:"c-rev",   s:"Fix weak areas from mock",                d:"Only re-study wrong answers",                         chk:true},
+      {t:"9:30–12:00",  c:"c-brk",   s:"Wind down — pack exam bag, no new study", d:"",                                                    chk:false},
+      {t:"12:00–8:00",  c:"c-sleep", s:"Sleep — 8 hours (most important!)",       d:"",                                                    chk:false},
+    ]
+  },
+];
+
+const SUBJECTS = [
+  {key:"prog",  name:"Programming", color:"var(--prog)"},
+  {key:"db",    name:"Database",    color:"var(--db)"},
+  {key:"dccet", name:"DCCET",       color:"var(--dccet)"},
+  {key:"algo",  name:"Algorithms",  color:"var(--algo)"},
+];
+
+let ST = {view:'overview', checks:{}, ratings:{}, subjNotes:{}, logs:{}, dayNotes:{}, moods:{}};
+try { const s = localStorage.getItem('st_v2'); if(s) ST = {...ST,...JSON.parse(s)}; } catch(e){}
+
+function persist() { try { localStorage.setItem('st_v2', JSON.stringify(ST)); } catch(e){} }
+
+function getDayProgress(d) {
+  const chks = ST.checks[d] || {};
+  const slots = DAYS_DATA[d].slots.filter(s=>s.chk);
+  const done = slots.filter((_,i)=>chks[i]).length;
+  return {done, total:slots.length, pct: slots.length ? Math.round(done/slots.length*100) : 0};
+}
+
+function getOverall() {
+  let done=0,total=0;
+  for(let d=0;d<5;d++){const p=getDayProgress(d);done+=p.done;total+=p.total;}
+  return total ? Math.round(done/total*100) : 0;
+}
+
+function switchView(v) {
+  ST.view = v;
+  document.querySelectorAll('.nav-item').forEach(el=>{
+    el.classList.toggle('active', el.dataset.view===v);
+  });
+  buildMobTabs();
+  renderMain();
+  persist();
+  window.scrollTo(0,0);
+}
+
+function buildMobTabs() {
+  const tabs = ['overview','day0','day1','day2','day3','day4','day5'];
+  const labels = ['All','Day 1','Day 2','Day 3','Day 4','Day 5','Exam'];
+  document.getElementById('mob-tabs').innerHTML = tabs.map((t,i)=>
+    `<div class="mob-tab ${ST.view===t?'active':''}" onclick="switchView('${t}')">${labels[i]}</div>`
+  ).join('');
+}
+
+function renderSidebar() {
+  for(let d=0;d<5;d++){
+    const p=getDayProgress(d);
+    const el=document.getElementById('sb-badge-'+d);
+    if(el){el.textContent=p.pct+'%';}
+    const nav=document.querySelector(`.nav-item[data-view="day${d}"]`);
+    if(nav){
+      nav.classList.toggle('done-day', p.pct===100);
+    }
+  }
+  const overall=getOverall();
+  document.getElementById('sb-prog').style.width=overall+'%';
+  document.getElementById('sb-pct').textContent=overall+'%';
+  document.getElementById('sb-days').textContent=6;
+}
+
+function renderMain() {
+  const el = document.getElementById('main-area');
+  const v = ST.view;
+
+  if(v==='overview') { el.innerHTML = buildOverview(); renderSidebar(); buildMobTabs(); return; }
+  if(v==='day5')    { el.innerHTML = buildExamDay(); renderSidebar(); buildMobTabs(); return; }
+
+  const d = parseInt(v.replace('day',''));
+  el.innerHTML = buildDayView(d);
+  renderSidebar();
+  buildMobTabs();
+}
+
+function buildOverview() {
+  const overall = getOverall();
+  const cards = DAYS_DATA.map((day,d)=>{
+    const p = getDayProgress(d);
+    return `<div class="day-overview-card" onclick="switchView('day${d}')">
+      <div style="flex:1">
+        <div class="day-ov-label">${day.title} <span style="font-weight:400;color:var(--text3);font-size:12px">— ${day.sub}</span></div>
+        <div class="day-ov-sub">${day.topics}</div>
+      </div>
+      <div class="day-ov-bar">
+        <div class="t">${p.done}/${p.total} done</div>
+        <div class="mini-bar"><div class="mini-fill ${p.pct===100?'complete':''}" style="width:${p.pct}%"></div></div>
+      </div>
+      <button class="go-btn" onclick="event.stopPropagation();switchView('day${d}')">Open →</button>
+    </div>`;
+  }).join('') + `<div class="day-overview-card" onclick="switchView('day5')" style="border-color:rgba(255,92,92,0.2)">
+    <div style="flex:1"><div class="day-ov-label" style="color:var(--red)">Day 6 — Exam day</div><div class="day-ov-sub">Light review only, stay calm</div></div>
+    <button class="go-btn" style="border-color:rgba(255,92,92,0.3);color:var(--red)" onclick="event.stopPropagation();switchView('day5')">Open →</button>
+  </div>`;
+
+  return `<div class="page-header">
+    <h2>All days overview</h2>
+    <p>Track progress across all 5 study days</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="s-label">Overall progress</div><div class="s-val">${overall}%</div><div class="s-sub">all 5 study days</div></div>
+    <div class="stat-card"><div class="s-label">Days until exam</div><div class="s-val">6</div><div class="s-sub">keep going!</div></div>
+    <div class="stat-card"><div class="s-label">Days completed</div><div class="s-val">${[0,1,2,3,4].filter(d=>getDayProgress(d).pct===100).length}/5</div><div class="s-sub">100% done</div></div>
+    <div class="stat-card"><div class="s-label">Total subjects</div><div class="s-val">4</div><div class="s-sub">Programming, DB, DCCET, Algo</div></div>
+  </div>
+  <div class="section">
+    <div class="section-head">Study days</div>
+    ${cards}
+  </div>`;
+}
+
+function buildDayView(d) {
+  const day = DAYS_DATA[d];
+  const checks = ST.checks[d] || {};
+  const p = getDayProgress(d);
+  let ci = 0;
+
+  const slotsHtml = day.slots.map(s=>{
+    if(!s.chk) return `<div class="slot">
+      <div class="slot-time">${s.t}</div>
+      <div class="slot-body ${s.c}"><strong>${s.s}</strong>${s.d?`<span>${s.d}</span>`:''}</div>
+      <div></div>
+    </div>`;
+    const idx=ci++; const on=!!checks[idx];
+    return `<div class="slot">
+      <div class="slot-time">${s.t}</div>
+      <div class="slot-body ${s.c} ${on?'done':''}"><strong>${s.s}</strong>${s.d?`<span>${s.d}</span>`:''}</div>
+      <div class="slot-chk ${on?'on':''}" onclick="toggleCheck(${d},${idx})" title="Mark done">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+    </div>`;
+  }).join('');
+
+  const subjHtml = SUBJECTS.map(sub=>{
+    const r=(ST.ratings[d]||{})[sub.key]||0;
+    const n=(ST.subjNotes[d]||{})[sub.key]||'';
+    const stars=[1,2,3,4,5].map(i=>`<span class="star ${i<=r?'on':''}" onclick="setRating(${d},'${sub.key}',${i})">★</span>`).join('');
+    return `<div class="subj-card">
+      <div class="subj-card-head"><div class="subj-dot" style="background:${sub.color}"></div><span>${sub.name}</span></div>
+      <div class="stars">${stars}</div>
+      <textarea class="subj-note" placeholder="What did you study? Any questions?" onchange="setSubjNote(${d},'${sub.key}',this.value)">${n}</textarea>
+    </div>`;
+  }).join('');
+
+  const logs = ST.logs[d] || [];
+  const logsHtml = logs.length
+    ? logs.map((l,i)=>`<div class="log-entry">
+        <div style="flex:1"><div class="log-text">${escHtml(l.text)}</div><div class="log-time">${l.time}</div></div>
+        <span class="log-del" onclick="delLog(${d},${i})" title="Remove">×</span>
+      </div>`).join('')
+    : `<div style="font-size:13px;color:var(--text3);padding:8px 0;font-style:italic">No entries yet — add what you studied.</div>`;
+
+  const curMood = ST.moods[d]||'';
+  const moods = ['Focused','Great','Okay','Tired','Stressed'];
+  const moodHtml = moods.map(m=>`<div class="mood-btn ${curMood===m?'on':''}" onclick="setMood(${d},'${m}')">${m}</div>`).join('');
+
+  return `<div class="page-header">
+    <h2>${day.title} — ${day.sub}</h2>
+    <p>${day.topics}</p>
+  </div>
+  <div class="stats-row">
+    <div class="stat-card"><div class="s-label">Blocks done</div><div class="s-val">${p.done}/${p.total}</div><div class="s-sub">schedule items</div></div>
+    <div class="stat-card"><div class="s-label">Progress today</div><div class="s-val">${p.pct}%</div><div class="s-sub">checkable blocks</div></div>
+    <div class="stat-card"><div class="s-label">Overall</div><div class="s-val">${getOverall()}%</div><div class="s-sub">all 5 days</div></div>
+    <div class="stat-card"><div class="s-label">Mood</div><div class="s-val" style="font-size:14px;padding-top:4px">${curMood||'—'}</div><div class="s-sub">how are you feeling</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-head">Today's schedule — tick each block when done</div>
+    ${slotsHtml}
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-head">Rate each subject today</div>
+    <div class="subj-grid">${subjHtml}</div>
+    <button class="btn btn-accent" style="margin-top:14px" id="save-subj-${d}" onclick="saveSubjects(${d})">Save ratings + notes</button>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-head">Study log — what did you actually do?</div>
+    <div id="log-list-${d}">${logsHtml}</div>
+    <div class="add-row">
+      <input class="add-input" id="log-input-${d}" placeholder="e.g. Finished SQL joins, solved 5 algo problems..." onkeydown="if(event.key==='Enter')addLog(${d})">
+      <button class="btn" onclick="addLog(${d})">+ Add</button>
+    </div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-head">How are you feeling today?</div>
+    <div class="mood-row">${moodHtml}</div>
+  </div>
+
+  <hr>
+
+  <div class="section">
+    <div class="section-head">Day notes</div>
+    <textarea class="textarea" id="daynote-${d}" rows="4" placeholder="Anything else — struggles, wins, plan for tomorrow...">${ST.dayNotes[d]||''}</textarea>
+    <button class="btn" id="save-note-${d}" style="margin-top:10px" onclick="saveDayNote(${d})">Save note</button>
+  </div>`;
+}
+
+function buildExamDay() {
+  return `<div class="page-header"><h2>Day 6 — Exam day</h2><p>You have done 5 days of hard work. Trust it.</p></div>
+  <div class="exam-hero">
+    <h2>Good luck today!</h2>
+    <p>Read your 4 cheat sheets this morning — no new material.<br>Eat a proper breakfast, take a short walk, breathe.<br>Read every exam question carefully and manage your time.</p>
+  </div>
+  <div class="section">
+    <div class="section-head">Exam day plan</div>
+    ${[
+      ['8:00–9:00','c-wake','Wake up + proper breakfast','Eat real food — your brain needs energy'],
+      ['9:00–10:00','c-rev','Light glance at cheat sheets only','No new material — just your 4 summary pages'],
+      ['10:00–10:30','c-gym','Short walk outside','Fresh air, calm your nerves, skip heavy gym'],
+      ['10:30–11:00','c-brk','Get ready + travel to exam venue',''],
+      ['Exam time','c-prog','Go get it — 5 days of hard work pay off now!','Read all questions first, manage time, attempt everything'],
+    ].map(([t,c,s,d])=>`<div class="slot">
+      <div class="slot-time">${t}</div>
+      <div class="slot-body ${c}"><strong>${s}</strong>${d?`<span>${d}</span>`:''}</div>
+      <div></div>
+    </div>`).join('')}
+  </div>
+  <hr>
+  <div class="section">
+    <div class="section-head">Post-exam notes</div>
+    <textarea class="textarea" id="daynote-5" rows="4" placeholder="How did it go? What questions did you see?">${ST.dayNotes[5]||''}</textarea>
+    <button class="btn" id="save-note-5" style="margin-top:10px" onclick="saveDayNote(5)">Save note</button>
+  </div>`;
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function toggleCheck(d,idx) {
+  if(!ST.checks[d]) ST.checks[d]={};
+  ST.checks[d][idx] = !ST.checks[d][idx];
+  persist(); renderMain();
+}
+
+function setRating(d,key,val) {
+  if(!ST.ratings[d]) ST.ratings[d]={};
+  ST.ratings[d][key] = ST.ratings[d][key]===val ? 0 : val;
+  persist(); renderMain();
+}
+
+function setSubjNote(d,key,val) {
+  if(!ST.subjNotes[d]) ST.subjNotes[d]={};
+  ST.subjNotes[d][key]=val; persist();
+}
+
+function saveSubjects(d) {
+  persist();
+  const btn=document.getElementById('save-subj-'+d);
+  if(btn){btn.textContent='Saved!';btn.classList.add('saved');setTimeout(()=>{btn.textContent='Save ratings + notes';btn.classList.remove('saved');},1500);}
+}
+
+function addLog(d) {
+  const inp=document.getElementById('log-input-'+d);
+  const val=inp.value.trim(); if(!val)return;
+  if(!ST.logs[d]) ST.logs[d]=[];
+  const now=new Date(); const t=now.getHours().toString().padStart(2,'0')+':'+now.getMinutes().toString().padStart(2,'0');
+  ST.logs[d].push({text:val,time:t});
+  inp.value=''; persist(); renderMain();
+}
+
+function delLog(d,idx) {
+  ST.logs[d].splice(idx,1); persist(); renderMain();
+}
+
+function setMood(d,m) {
+  ST.moods[d] = ST.moods[d]===m ? '' : m;
+  persist(); renderMain();
+}
+
+function saveDayNote(d) {
+  const el=document.getElementById('daynote-'+d);
+  if(el) ST.dayNotes[d]=el.value;
+  persist();
+  const btn=document.getElementById('save-note-'+d);
+  if(btn){btn.textContent='Saved!';btn.classList.add('saved');setTimeout(()=>{btn.textContent='Save note';btn.classList.remove('saved');},1500);}
+}
+
+buildMobTabs();
+renderMain();
+</script>
+</body>
+</html>
